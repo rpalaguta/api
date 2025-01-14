@@ -4,7 +4,7 @@ Beginning of Docker + Laravel project
 
 Currently nothing works
 
-To run this project you need Docker, then:
+To run this project you need Docker.
 
 Make a copy of .env.example file and rename it to .env
 

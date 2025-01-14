@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
+    // TODO: move validation to Request class
     public function register(Request $request)
     {
         $request->validate([
