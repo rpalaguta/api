@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Psychologist;
+use App\Models\User;
 
 class PsychologistService
 {
@@ -13,6 +13,8 @@ class PsychologistService
 
     public function getAllPsychologists()
     {
-        return Psychologist::all();
+        return User::with('roles')->whereHas('roles', function ($query) {
+            $query->where('name', 'psychologist');
+        })->get();
     }
 }

@@ -1,12 +1,12 @@
 <?php
-
+// filepath: /c:/Users/rpala/Desktop/Darbas/Užduotys/api/src/tests/Unit/TimeSlotServiceTest.php
 namespace Tests\Unit;
 
-use App\Models\Psychologist;
-use App\Models\TimeSlot;
-use App\Services\TimeSlotService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Services\TimeSlotService;
+use App\Models\User;
+use App\Models\TimeSlot;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TimeSlotServiceTest extends TestCase
 {
@@ -14,64 +14,107 @@ class TimeSlotServiceTest extends TestCase
 
     protected $timeSlotService;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->timeSlotService = new TimeSlotService();
     }
 
-    #[\PHPUnit\Framework\Attributes\Test]
-    public function it_can_create_time_slot_for_psychologist()
+    public function testCreateTimeSlot()
     {
-        $psychologist = Psychologist::factory()->create();
+        $psychologist = User::factory()->create();
         $data = [
-            'start_time' => now()->addHour(),
-            'end_time' => now()->addHour(2),
+            'start_time' => '2023-10-01 10:00:00',
+            'end_time' => '2023-10-01 11:00:00',
+            'psychologist_id' => $psychologist->id,
         ];
 
-        $timeSlot = $this->timeSlotService->createTimeSlot($data, $psychologist->id);
+        $response = $this->timeSlotService->createTimeSlot($data, $psychologist->id);
 
-        $this->assertDatabaseHas('time_slots', [
-            'psychologist_id' => $psychologist->id,
-            'start_time' => $data['start_time'],
-            'end_time' => $data['end_time'],
-        ]);
+        $this->assertDatabaseHas('time_slots', $data);
+        $this->assertEquals($response->psychologist_id, $psychologist->id);
     }
 
-    #[\PHPUnit\Framework\Attributes\Test]
-    public function it_can_retrieve_time_slots_for_psychologist()
+    public function testGetTimeSlotsForPsychologist()
     {
-        $psychologist = Psychologist::factory()->create();
-        TimeSlot::factory()->create(['psychologist_id' => $psychologist->id]);
+        $psychologist = User::factory()->create();
+        $timeSlot = TimeSlot::factory()->create(['psychologist_id' => $psychologist->id]);
 
         $timeSlots = $this->timeSlotService->getTimeSlotsForPsychologist($psychologist->id);
 
         $this->assertCount(1, $timeSlots);
+        $this->assertEquals($timeSlot->id, $timeSlots->first()->id);
     }
 
-    #[\PHPUnit\Framework\Attributes\Test]
-    public function it_can_update_time_slot_status_to_booked()
+    public function testDeleteTimeSlot()
     {
-        $timeSlot = TimeSlot::factory()->create(['is_booked' => false]);
+        $psychologist = User::factory()->create();
+        $timeSlot = TimeSlot::factory()->create(['psychologist_id' => $psychologist->id]);
 
-        $updatedTimeSlot = $this->timeSlotService->updateTimeSlotStatus($timeSlot->id);
+        $response = $this->timeSlotService->deleteTimeSlot($timeSlot->id, $psychologist->id);
 
-        $this->assertTrue($updatedTimeSlot->is_booked);
+        $this->assertEquals(204, $response['code']);
+        $this->assertDatabaseMissing('time_slots', ['id' => $timeSlot->id]);
     }
 
-    #[\PHPUnit\Framework\Attributes\Test]
-    public function it_can_delete_time_slot()
+    public function testUpdateTimeSlot()
     {
-        // Create a time slot
         $timeSlot = TimeSlot::factory()->create();
+        $data = [
+            'start_time' => '2023-10-01 12:00:00',
+            'end_time' => '2023-10-01 13:00:00',
+        ];
 
-        // Delete the time slot
-        $this->timeSlotService->deleteTimeSlot($timeSlot->id);
+        $response = $this->timeSlotService->updateTimeSlot($timeSlot->id, $data);
 
-        // Assert that the time slot has been deleted
-        $this->assertDatabaseMissing('time_slots', [
+        $this->assertNull($response['error']);
+        $this->assertDatabaseHas('time_slots', $data);
+    }
+
+    public function testUpdateTimeSlotWithOverlappingTimeSlot()
+    {
+        $psychologist = User::factory()->create();
+
+        TimeSlot::factory()->create([
+            'psychologist_id' => $psychologist->id,
+            'start_time' => '2025-01-15 10:00:00',
+            'end_time' => '2025-01-15 11:00:00',
+        ]);
+
+        $timeSlot = TimeSlot::factory()->create([
+            'psychologist_id' => $psychologist->id,
+            'start_time' => '2025-01-15 11:00:00',
+            'end_time' => '2025-01-15 12:00:00',
+        ]);
+
+
+        $data = [
+            'start_time' => '2025-01-15 10:30:00',
+            'end_time' => '2025-01-15 11:03:00',
+        ];
+
+        $response = $this->timeSlotService->updateTimeSlot($timeSlot->id, $data);
+
+        $this->assertEquals(['error' => 'Time slot overlaps with another slot'], $response);
+    }
+
+    public function testReserveAnAppointment()
+    {
+        $user = User::factory()->create();
+
+        // Log the user in using Sanctum
+        $this->actingAs($user, 'sanctum');
+
+        $timeSlot = TimeSlot::factory()->create([
+            'psychologist_id' => $user->id,  // Ensure the time slot is linked to the psychologist
+            'client_id' => null,
+        ]);
+
+        $appointment = $this->timeSlotService->reserveTimeSlot($timeSlot->id, $user->id);
+
+        $this->assertDatabaseHas('time_slots', [
             'id' => $timeSlot->id,
+            'client_id' => $user->id,
         ]);
     }
 }
-

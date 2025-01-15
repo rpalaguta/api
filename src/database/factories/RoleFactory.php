@@ -5,7 +5,6 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\Role;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -41,19 +40,5 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
-    }
-
-    /**
-    * Attach a role with role_id = 2 to the user.
-    */
-    public function withPsychologistRole(): static
-    {
-        return $this->afterCreating(function ($user) {
-            $role = Role::firstOrCreate(
-                ['name' => 'psychologist'],
-                ['id' => 2],
-            );
-            $user->roles()->attach($role->id);
-        });
     }
 }

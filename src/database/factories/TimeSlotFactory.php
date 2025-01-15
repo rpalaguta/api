@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Psychologist;
+use App\Models\User;
 use App\Models\TimeSlot;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -13,10 +13,9 @@ class TimeSlotFactory extends Factory
     public function definition()
     {
         return [
-            'psychologist_id' => Psychologist::factory(), // Automatically creates a Psychologist
+            'psychologist_id' => User::factory(), // Automatically creates a Psychologist
             'start_time' => $this->faker->dateTimeBetween('now', '+1 week'),
             'end_time' => $this->faker->dateTimeBetween('+1 week', '+2 weeks'),
-            'is_booked' => false,
         ];
     }
 }

@@ -10,15 +10,23 @@ class TimeSlot extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['psychologist_id', 'start_time', 'end_time', 'is_booked'];
+    protected $fillable = ['psychologist_id', 'start_time', 'end_time', 'client_id'];
 
-    public function psychologist()
-    {
-        return $this->belongsTo(Psychologist::class);
-    }
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
 
     public function appointment()
     {
         return $this->hasOne(Appointment::class);
+    }
+
+    /**
+     * Get the psychologist that owns the time slot.
+     */
+    public function psychologist()
+    {
+        return $this->belongsTo(User::class, 'psychologist_id');
     }
 }

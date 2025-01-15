@@ -13,9 +13,17 @@ return new class extends Migration
     {
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('time_slot_id')->constrained()->onDelete('cascade');
-            $table->string('client_name', 255);
-            $table->string('client_email');
+
+            // Reference to 'time_slots.id' for time_slot_id
+            $table->foreignId('time_slot_id')
+                ->constrained()  // Assumes the time_slots table and references the 'id' column
+                ->onDelete('cascade');  // If the time slot is deleted, delete the associated appointments
+
+            // Reference to 'users.id' for client_id (nullable)
+            $table->foreignId('client_id')
+                ->constrained('users', 'id')  // References the 'users.id' column
+                ->onDelete('cascade');  // If a user is deleted, delete the associated appointments
+
             $table->timestamps();
         });
     }
